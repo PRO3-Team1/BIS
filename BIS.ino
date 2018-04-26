@@ -6,6 +6,11 @@ const int delaytime = 1;
 int resistorValue = 0;
 
 
+int hall_sensor = A1;  // select the input pin for the potentiometer
+int hall_sensor_value= 0;  // variable to store the value coming from the sensor
+const int hall_sensor_minlim=350;
+const int hall_sensor_maxlim=450;
+
 // Set the LCD I2C address
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
@@ -25,9 +30,14 @@ int task2(void) {
 }
 
 int task3(void) {
-  if (1) { // Should test if digitalRead(sensorPin) is 1
+ 
+   // put your main code here, to run repeatedly:
+   hall_sensor_value = analogRead(hall_sensor);
+   Serial.println(hall_sensor_value);
+   if(hall_sensor_value < hall_sensor_minlim || hall_sensor_value > hall_sensor_maxlim){
+    Serial.println("Success!!");
     return 0;
-  }
+    }
 }
 
 int task4(void) {
