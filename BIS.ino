@@ -1,63 +1,92 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-
-const int resistorPin = A0;
-const int delaytime = 1;
-int resistorValue = 0;
+#include <Servo.h> 
 
 
-int hall_sensor = A1;  // select the input pin for the potentiometer
-int hall_sensor_value= 0;  // variable to store the value coming from the sensor
-const int hall_sensor_minlim=350;
-const int hall_sensor_maxlim=450;
+#define DELAY_TIME 			5000
+Servo lock
+#define LOCK_PIN 			D2
+#define LOCK_ANGLE_LOCKED 	10
+#define LOCK_ANGLE_UNLOCKED 170
+
+//Resistor task
+#define TASK1_PIN			A1
+#define TASK1_LOWER			344
+#define TASK1_UPPER			444
+
+//Binary 
+#define TASK2_PIN_1			D3
+#define TASK2_PIN_2			D4
+
+//Hall sensor
+#define TASK3_PIN			A2
+#define TASK3_LOWER			350
+#define TASK3_UPPER			450
+
+#define TASK4_PIN			A3
+#define TASK4_LOWER			500
+#define TASK4_UPPER			524
+#define TASK4_HOLDTIME		2000
+static unsigned long holdtime = 0;
 
 // Set the LCD I2C address
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
 int task1(void) {
-  resistorValue = analogRead(resistorPin);
-  Serial.println(resistorValue);
-  if (resistorValue > 344 && resistorValue < 444) { // Should test if analogRead(resistorPin) is between two set values
-    Serial.println("Done!");
+  int resistorValue = analogRead(TASK1_PIN);
+  //test if analogRead(TASK1_PIN) is between two set values
+  if (resistorValue > TASK1_LOWER && resistorValue < TASK1_UPPER) {  
+    Serial.print("Task 1 - Done: ");
+	Serial.println(resistorValue)
     return 0;
   }
 }
 
+//Binary task
 int task2(void) {
-  if (1) { // Should test if digitalRead(dipSwitchPin) is 1
-    return 0;
-  }
+	if (digital(TASK2_PIN_1) == HIGH && digitalRead(TASK2_PIN_2) == HIGH) { 
+		Serial.println("Task 2 - Done");
+		return true;
+	}
+	return false;
 }
 
+//HALL sensor task
 int task3(void) {
- 
-   // put your main code here, to run repeatedly:
-   hall_sensor_value = analogRead(hall_sensor);
-   Serial.println(hall_sensor_value);
-   if(hall_sensor_value < hall_sensor_minlim || hall_sensor_value > hall_sensor_maxlim){
-    Serial.println("Success!!");
-    return 0;
-    }
+	int hall_sensor_value = analogRead(TASK3_PIN);
+	if(hall_sensor_value < TASK3_LOWER || hall_sensor_value > TASK3_UPPER){
+		Serial.print("Task 3 - Done: ");
+		Serial.println(hall_sensor_value);
+		return true;
+	}
+	return false;
 }
 
 int task4(void) {
-  /*
-     Analog read value should be written to the display
-     Some timing functionality is needed here (maybe milis()) to test if value is stable for 2 seconds
-  */
-
-  if (1) {// Should test if analogRead(voltagePin) is between two set values
-    //start/restart the milis() timer
-    if (1) { // if milis() > 2000 && analogRead(voltagePin) is between two set values
-      return 0;
-    }
-  }
+	int a_value = analogRead(TASK4_PIN);
+	if (a_value > TASK4_LOWER && a_value < TASK4_UPPER && holdtime == 0) {
+		holdtime = millis();
+		Serial.print("Task 4 - Value: ");
+		Serial.println(a_value);
+	} else {
+		holdtime = 0;
+	}
+	
+	if(holdtime && millis() - holdtime > TASK4_HOLDTIME) {
+		Serial.println("Task 4 - Done");
+		return true;
+	}
+	return false;	
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  lock.attach(LOCK_PIN);
+  lock.write(LOCK_ANGLE_LOCKED);
+  myservo.write(90);  // set servo to mid-point
   lcd.begin(16, 2);  // initialize the lcd
   lcd.clear();
+  
 }
 
 void loop() {
@@ -65,42 +94,48 @@ void loop() {
   lcd.print("Welcome");
   lcd.setCursor(0, 1);
   lcd.print("...");
-  delay(delaytime);
+  delay(DELAY_TIME);
 
   lcd.setCursor(0, 0);
   lcd.print("Task 1");
-  while (task1() != 0) {} // Wait here till task1 is completed
+  while (task1() == 0) {} // Wait here till task1 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!");
-  delay(delaytime);
+  delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
 
   lcd.setCursor(0, 0);
   lcd.print("Task 2");
-  while (task2() != 0) {} // Wait here till task2 is completed
+  while (task2() == 0) {} // Wait here till task2 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!");
-  delay(delaytime);
+  delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
 
   lcd.setCursor(0, 0);
   lcd.print("Task 3");
-  while (task3() != 0) {} // Wait here till task3 is completed
+  while (task3() == 0) {} // Wait here till task3 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!");
-  delay(delaytime);
+  delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
 
 
   lcd.setCursor(0, 0);
   lcd.print("Task 4");
-  while (task4() != 0) {} // Wait here till task4 is completed
+  while (task4() == 0) {} // Wait here till task4 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!");
-  delay(delaytime);
+  delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
+
+  lcd.setCursor(0, 0);
+  lcd.print("Quest complete!");
+  delay(DELAY_TIME);
+  lock.write(LOCK_ANGLE_UNLOCKED);
+  while(1) {} // Wait forever
 }
