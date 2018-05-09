@@ -87,7 +87,7 @@
 #define NOTE_CS8 4435
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
-#define NOTE_SUSTAIN 150
+#define NOTE_SUSTAIN 160
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -103,16 +103,16 @@ Servo lock;
 #define TASK1_LOWER			500
 #define TASK1_UPPER			524
 //Binary
-#define TASK2_PIN_1			3
-#define TASK2_PIN_2			4
+#define TASK2_PIN_1			2
+#define TASK2_PIN_2			3
 //Hall sensor
 #define TASK3_PIN			A3
 #define TASK3_LOWER			480
 #define TASK3_UPPER			560
 // Measure
-#define TASK4_PIN			A4
-#define TASK4_LOWER			298
-#define TASK4_UPPER			302
+#define TASK4_PIN			A6
+#define TASK4_LOWER			367
+#define TASK4_UPPER			377
 static unsigned long holdtime = 0;
 // Buzzer
 #define BUZZER_PIN  12
@@ -125,7 +125,6 @@ int task1(void) {
   delay (1000);
   //test if analogRead(TASK1_PIN) is between two set values
   if (resistorValue > TASK1_LOWER && resistorValue < TASK1_UPPER) {
-    Succes();
     return true;
   }
   return false;
@@ -171,6 +170,47 @@ int task4(void) {
   return false;
 }
 
+char notes[] = "gabygabyxzCDxzCDabywabywzCDEzCDEbywFCDEqywFGDEqi        azbC"; // a space represents a rest
+int length = sizeof(notes); // the number of notes
+int beats[] = { 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 2,3,3,16,};
+int tempo = 75/4;
+
+void playTone(int tone, int duration) {
+  for (long i = 0; i < duration * 1000L; i += tone * 2) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delayMicroseconds(tone);
+    digitalWrite(BUZZER_PIN, LOW);
+    delayMicroseconds(tone);
+  }
+}
+
+void playNote(char note, int duration) {
+  char names[] = { 'c', 'd', 'e', 'f', 'g', 'x', 'a', 'z', 'b', 'C', 'y', 'D', 'w', 'E', 'F', 'q', 'G', 'i' };
+  // c=C4, C = C5. These values have been tuned.
+  int tones[] = { 1898, 1690, 1500, 1420, 1265, 1194, 1126, 1063, 1001, 947, 893, 843, 795, 749, 710, 668, 630, 594 };
+   
+  // play the tone corresponding to the note name
+  for (int i = 0; i < 18; i++) {
+    if (names[i] == note) {
+      playTone((tones[i])/17, duration);
+    }
+  }
+}
+
+
+void Succes2(void){
+  for (int i = 0; i < length; i++) {
+    if (notes[i] == ' ') {
+      delay(beats[i] * tempo); // rest
+    } else {
+      playNote(notes[i], beats[i] * tempo);
+    }
+    
+    // pause between notes
+    delay(tempo / 2); 
+}
+  }
+
 void Succes(void) {
   tone(BUZZER_PIN, NOTE_A5);
   delay(NOTE_SUSTAIN);
@@ -211,6 +251,7 @@ void setup() {
 }
 
 void loop() {
+  Serial.println("loop start");
   lcd.setCursor(0, 0);
   lcd.print("Can you open");
   lcd.setCursor(0, 1);
@@ -225,6 +266,7 @@ void loop() {
   while (task1() == 0) {} // Wait here till task1 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!      ");
+  Succes();
   delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
@@ -237,6 +279,7 @@ void loop() {
   while (task2() == 0) {} // Wait here till task2 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!      ");
+  Succes2();
   delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
@@ -249,6 +292,7 @@ void loop() {
   while (task3() == 0) {} // Wait here till task3 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!      ");
+  Succes2();
   delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
@@ -261,6 +305,7 @@ void loop() {
   while (task4() == 0) {} // Wait here till task4 is completed
   lcd.setCursor(0, 1);
   lcd.print("Completed!      ");
+  Succes();
   delay(DELAY_TIME);
 
   lcd.clear() ;
