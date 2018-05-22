@@ -283,6 +283,7 @@ void loop() {
   lcd.print("Can you open");
   lcd.setCursor(0, 1);
   lcd.print("The Quest Box");
+  Succes2();
   delay(DELAY_TIME);
 
   lcd.clear() ;
