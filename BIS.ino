@@ -102,9 +102,10 @@ Servo lock;
 #define TASK1_PIN			A1
 #define TASK1_LOWER			500
 #define TASK1_UPPER			524
+#define TASK1_DIODE   2
 //Binary
-#define TASK2_PIN_1			2
-#define TASK2_PIN_2			3
+#define TASK2_PIN_1			7
+#define TASK2_PIN_2			6
 //Hall sensor
 #define TASK3_PIN			A3
 #define TASK3_LOWER			480
@@ -124,8 +125,28 @@ int task1(void) {
   int resistorValue = analogRead(TASK1_PIN);
   delay (1000);
   //test if analogRead(TASK1_PIN) is between two set values
-  if (resistorValue > TASK1_LOWER && resistorValue < TASK1_UPPER) {
+  if (resistorValue > TASK1_LOWER && resistorValue < TASK1_UPPER)
+  {
+    digitalWrite (TASK1_DIODE, HIGH);
     return true;
+  }
+  else
+  {
+    Serial.println(resistorValue);
+    lcd.setCursor(0, 1);
+    if (resistorValue < 1)
+    {
+      lcd.print("Insert Resistor");
+    }
+    else if (resistorValue < TASK1_LOWER)
+    {
+      lcd.print("Too high        ");
+    }
+    else
+    {
+      lcd.print("Too low         ");
+
+    }
   }
   return false;
 }
@@ -160,7 +181,7 @@ int task4(void) {
   if (TASK4_LOWER <= displayvalue && displayvalue <= TASK4_UPPER)
   {
     holdtime++;
-    if (holdtime >= 20) {
+    if (holdtime >= 40) {
       return true;
     }
   } else
@@ -172,8 +193,8 @@ int task4(void) {
 
 char notes[] = "gabygabyxzCDxzCDabywabywzCDEzCDEbywFCDEqywFGDEqi        azbC"; // a space represents a rest
 int length = sizeof(notes); // the number of notes
-int beats[] = { 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1, 2,3,3,16,};
-int tempo = 75/4;
+int beats[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 16,};
+int tempo = 75 / 4;
 
 void playTone(int tone, int duration) {
   for (long i = 0; i < duration * 1000L; i += tone * 2) {
@@ -188,28 +209,28 @@ void playNote(char note, int duration) {
   char names[] = { 'c', 'd', 'e', 'f', 'g', 'x', 'a', 'z', 'b', 'C', 'y', 'D', 'w', 'E', 'F', 'q', 'G', 'i' };
   // c=C4, C = C5. These values have been tuned.
   int tones[] = { 1898, 1690, 1500, 1420, 1265, 1194, 1126, 1063, 1001, 947, 893, 843, 795, 749, 710, 668, 630, 594 };
-   
+
   // play the tone corresponding to the note name
   for (int i = 0; i < 18; i++) {
     if (names[i] == note) {
-      playTone((tones[i])/17, duration);
+      playTone((tones[i]) / 17, duration);
     }
   }
 }
 
 
-void Succes2(void){
+void Succes2(void) {
   for (int i = 0; i < length; i++) {
     if (notes[i] == ' ') {
       delay(beats[i] * tempo); // rest
     } else {
       playNote(notes[i], beats[i] * tempo);
     }
-    
+
     // pause between notes
-    delay(tempo / 2); 
-}
+    delay(tempo / 2);
   }
+}
 
 void Succes(void) {
   tone(BUZZER_PIN, NOTE_A5);
@@ -237,6 +258,10 @@ void Succes(void) {
   tone(BUZZER_PIN, NOTE_E5);
   delay(NOTE_SUSTAIN);
   noTone (BUZZER_PIN);
+  delay (500);
+  lock.write(LOCK_ANGLE_LOCKED + 10);
+  delay (500);
+  lock.write(LOCK_ANGLE_LOCKED);
 }
 
 void setup() {
@@ -247,6 +272,8 @@ void setup() {
   Serial.println("setup in progress");
   lcd.begin(16, 2);  // initialize the lcd
   lcd.clear();
+  pinMode (TASK1_DIODE, OUTPUT);
+  digitalWrite (TASK1_DIODE, LOW);
   Serial.println("setup done");
 }
 
@@ -260,14 +287,19 @@ void loop() {
 
   lcd.clear() ;
   lcd.setCursor(0, 0);
-  lcd.print("T1 Formodstand");
-  lcd.setCursor(0, 1);
-  lcd.print("OHMS lov");
+  lcd.print("T1 Resistor");
   while (task1() == 0) {} // Wait here till task1 is completed
   lcd.setCursor(0, 1);
-  lcd.print("Completed!      ");
+  //lcd.print("Completed!      ");
+  lcd.clear() ;
+  lcd.setCursor(0, 0);
+  lcd.print("Task 1 Done");
+  lcd.setCursor(0, 1);
+  lcd.print("Great Work");
+
   Succes();
   delay(DELAY_TIME);
+
   lcd.setCursor(0, 1);
   lcd.print("...!");
 
@@ -278,8 +310,13 @@ void loop() {
   lcd.print("Hex to Binary");
   while (task2() == 0) {} // Wait here till task2 is completed
   lcd.setCursor(0, 1);
-  lcd.print("Completed!      ");
-  Succes2();
+  //lcd.print("Completed!      ");
+  lcd.clear() ;
+  lcd.setCursor(0, 0);
+  lcd.print("Task 2 Done");
+  lcd.setCursor(0, 1);
+  lcd.print("1/2 way there");
+  Succes();
   delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
@@ -291,8 +328,13 @@ void loop() {
   lcd.print("Activate SS49E");
   while (task3() == 0) {} // Wait here till task3 is completed
   lcd.setCursor(0, 1);
-  lcd.print("Completed!      ");
-  Succes2();
+  //lcd.print("Completed!      ");
+  lcd.clear() ;
+  lcd.setCursor(0, 0);
+  lcd.print("Task 3 Done");
+  lcd.setCursor(0, 1);
+  lcd.print("Google-Fu");
+  Succes();
   delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("...!");
@@ -304,7 +346,12 @@ void loop() {
   lcd.print("Measure & Adjust");
   while (task4() == 0) {} // Wait here till task4 is completed
   lcd.setCursor(0, 1);
-  lcd.print("Completed!      ");
+  //lcd.print("Completed!      ");
+  lcd.clear() ;
+  lcd.setCursor(0, 0);
+  lcd.print("Task 4 Done");
+  lcd.setCursor(0, 1);
+  lcd.print("Knowledge +1 UP");
   Succes();
   delay(DELAY_TIME);
 
@@ -314,6 +361,7 @@ void loop() {
   delay(DELAY_TIME);
   lcd.setCursor(0, 1);
   lcd.print("Reward Time");
+  Succes2();
   delay(DELAY_TIME);
   lock.write(LOCK_ANGLE_UNLOCKED);
   while (1) {} // Wait forever
